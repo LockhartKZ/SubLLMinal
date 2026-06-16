@@ -10,15 +10,18 @@ timing and styling intact, and supports right-to-left languages (Arabic, Persian
 
 ## Screenshots
 
-<p align="center">
-  <img src="screenshots/1.png" alt="SubLLMinal main window: open a subtitle, choose languages, and connect to a local or cloud LLM endpoint" width="800"><br>
-  <em>Load a subtitle, pick the source/target languages, and connect to a local-first (or cloud) LLM endpoint.</em>
-</p>
-
-<p align="center">
-  <img src="screenshots/2.png" alt="SubLLMinal translation options, glossary, and the RTL-aware side-by-side preview" width="800"><br>
-  <em>Translation options, glossary, and the RTL-aware side-by-side preview — with inline editing and reading-speed warnings.</em>
-</p>
+<table>
+  <tr>
+    <td width="50%" valign="top" align="center">
+      <img src="screenshots/1.png" alt="SubLLMinal main window: open a subtitle, choose languages, and connect to a local or cloud LLM endpoint"><br>
+      <em>Open a subtitle, pick the source/target languages, and connect to a local-first (or cloud) LLM endpoint.</em>
+    </td>
+    <td width="50%" valign="top" align="center">
+      <img src="screenshots/2.png" alt="SubLLMinal translation options, glossary, and the RTL-aware side-by-side preview"><br>
+      <em>Translation options, glossary, and the RTL-aware side-by-side preview — inline editing and reading-speed warnings.</em>
+    </td>
+  </tr>
+</table>
 
 ## How it works
 

@@ -12,13 +12,17 @@ timing and styling intact, and supports right-to-left languages (Arabic, Persian
 
 <table>
   <tr>
-    <td width="50%" valign="top" align="center">
+    <td width="33%" valign="top" align="center">
       <img src="screenshots/1.png" alt="SubLLMinal main window: open a subtitle, choose languages, and connect to a local or cloud LLM endpoint"><br>
       <em>Open a subtitle, pick the source/target languages, and connect to a local-first (or cloud) LLM endpoint.</em>
     </td>
-    <td width="50%" valign="top" align="center">
+    <td width="33%" valign="top" align="center">
       <img src="screenshots/2.png" alt="SubLLMinal translation options, glossary, and the RTL-aware side-by-side preview"><br>
       <em>Translation options, glossary, and the RTL-aware side-by-side preview — inline editing and reading-speed warnings.</em>
+    </td>
+    <td width="33%" valign="top" align="center">
+      <img src="screenshots/3.jpg" alt="RTL comparison: other LLM apps mis-order Latin tokens in a right-to-left subtitle, while SubLLMinal keeps them correctly placed"><br>
+      <em>RTL done right: Latin runs like <code>H1</code>/<code>H6</code> stay correctly placed inside the right-to-left line — where other apps mis-order them.</em>
     </td>
   </tr>
 </table>

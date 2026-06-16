@@ -6,7 +6,7 @@
 A small Windows desktop app that translates `.srt` and `.ass` subtitle files with an
 LLM — **local-first** (LM Studio, llama.cpp, Ollama) with optional cloud endpoints.
 It sends the dialogue a few lines at a time with prior lines as context, keeps all
-timing and styling intact, and supports right-to-left languages (Arabic, Hebrew, …).
+timing and styling intact, and supports right-to-left languages (Arabic, Persian, …).
 
 ## How it works
 

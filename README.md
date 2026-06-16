@@ -8,6 +8,18 @@ LLM — **local-first** (LM Studio, llama.cpp, Ollama) with optional cloud endpo
 It sends the dialogue a few lines at a time with prior lines as context, keeps all
 timing and styling intact, and supports right-to-left languages (Arabic, Persian, …).
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/1.png" alt="SubLLMinal main window: open a subtitle, choose languages, and connect to a local or cloud LLM endpoint" width="800"><br>
+  <em>Load a subtitle, pick the source/target languages, and connect to a local-first (or cloud) LLM endpoint.</em>
+</p>
+
+<p align="center">
+  <img src="screenshots/2.png" alt="SubLLMinal translation options, glossary, and the RTL-aware side-by-side preview" width="800"><br>
+  <em>Translation options, glossary, and the RTL-aware side-by-side preview — with inline editing and reading-speed warnings.</em>
+</p>
+
 ## How it works
 
 - The **app** parses the subtitle file. The model only ever receives the spoken

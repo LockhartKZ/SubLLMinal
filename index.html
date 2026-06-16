@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SubLLMinal</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>SubLLMinal</h1>
+        <p class="sub">Local-first &nbsp;·&nbsp; .srt / .ass &nbsp;·&nbsp; RTL-aware</p>
+      </header>
+
+      <section id="dropzone" class="dropzone">
+        <p>Drag a <strong>.srt</strong> or <strong>.ass</strong> file here, or</p>
+        <button id="browseBtn" type="button">Browse…</button>
+        <select id="recentFiles" class="recent" hidden title="Recently opened files"></select>
+        <p id="fileInfo" class="muted"></p>
+      </section>
+
+      <section class="row langs">
+        <label>From
+          <select id="sourceLang"></select>
+        </label>
+        <span class="arrow">→</span>
+        <label>To
+          <select id="targetLang"></select>
+        </label>
+      </section>
+
+      <details id="settings" class="settings">
+        <summary>Model &amp; connection <span id="connDot" class="conn-dot" title="Connection status"></span></summary>
+        <div class="grid">
+          <label>Endpoint
+            <select id="preset"></select>
+          </label>
+          <label>Base URL
+            <input id="baseUrl" type="text" spellcheck="false" placeholder="http://localhost:1234/v1" />
+          </label>
+          <label>Model
+            <span class="model-row">
+              <span class="combo" id="modelCombo">
+                <input id="model" type="text" spellcheck="false" autocomplete="off"
+                       placeholder="model id" role="combobox" aria-autocomplete="list"
+                       aria-expanded="false" aria-controls="modelMenu" />
+                <button id="modelToggle" type="button" class="combo-caret" tabindex="-1"
+                        aria-label="Show available models">▾</button>
+                <ul id="modelMenu" class="combo-menu" role="listbox" hidden></ul>
+              </span>
+              <button id="refreshModels" type="button" title="List models from server">↻</button>
+            </span>
+          </label>
+          <label>API key <span class="muted">(optional, local servers ignore it)</span>
+            <input id="apiKey" type="password" autocomplete="off" />
+          </label>
+          <label>Temperature
+            <input id="temperature" type="number" min="0" max="1" step="0.1" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="testBtn" type="button">Test connection</button>
+          <span id="connStatus" class="muted"></span>
+        </div>
+        <p id="presetHint" class="muted hint"></p>
+      </details>
+
+      <section class="options">
+        <h2>Translation options</h2>
+        <div class="opt-grid">
+          <label>Lines per batch
+            <input id="batchSize" type="number" min="1" max="100" />
+            <small class="muted">How many subtitle lines are sent to the model at once. Lower is more reliable on small models; higher is faster.</small>
+          </label>
+          <label>Context lines
+            <input id="contextLines" type="number" min="0" max="40" />
+            <small class="muted">How many already-translated lines to show the model for continuity (tone, names, gender). 0 disables context.</small>
+          </label>
+          <label>Tone / formality
+            <select id="tone"></select>
+            <small class="muted">Register to aim for. Formal/Informal also nudge the polite vs familiar "you" (vous/Sie vs tu/du) where the language has one.</small>
+          </label>
+        </div>
+        <label class="opt-check">
+          <input id="refine" type="checkbox" />
+          <span>Refine pass — review &amp; improve each line after translating
+            <small class="muted">Higher quality, but roughly doubles model calls and time. Off by default.</small>
+          </span>
+        </label>
+        <label class="opt-check">
+          <input id="reasoning" type="checkbox" />
+          <span>Enable reasoning — let the model think before answering
+            <small class="muted">Higher quality but slower responses and higher cost. Only on supported models.</small>
+          </span>
+        </label>
+      </section>
+
+      <section class="context">
+        <label for="contextNote">Context / notes for the model <span class="muted">(optional — improves terminology)</span></label>
+        <textarea id="contextNote" rows="3" spellcheck="false"
+          placeholder="Describe the movie/show so the model picks the right words. e.g. 'A film about competitive chess — keep chess terms accurate (grandmaster, gambit, endgame) and leave move notation like Nf3, O-O, e4 unchanged.'"></textarea>
+      </section>
+
+      <section class="context">
+        <label for="glossary">Glossary <span class="muted">(optional — one <code>term = translation</code> per line)</span></label>
+        <textarea id="glossary" rows="3" spellcheck="false"
+          placeholder="Force specific terms/names. One per line:&#10;grandmaster = أستاذ كبير&#10;Kasparov = كاسباروف&#10;Nf3 = ن ف٣"></textarea>
+      </section>
+
+      <section class="row actions">
+        <button id="translateBtn" class="primary" type="button" disabled>Translate</button>
+        <button id="cancelBtn" type="button" disabled>Cancel</button>
+        <button id="saveBtn" type="button" disabled>Save…</button>
+        <button id="openFolderBtn" type="button" disabled title="Show the saved file in Explorer">Open folder</button>
+      </section>
+
+      <section id="progressWrap" class="progress-wrap" hidden>
+        <div class="progress"><div id="progressBar" class="bar"></div></div>
+        <span id="progressText" class="muted"></span>
+      </section>
+
+      <section id="findReplace" class="row findbar" hidden>
+        <input id="findInput" type="text" placeholder="Find in translations" spellcheck="false" />
+        <input id="replaceInput" type="text" placeholder="Replace with" spellcheck="false" />
+        <button id="replaceAllBtn" type="button">Replace all</button>
+      </section>
+
+      <section class="preview">
+        <div class="preview-head"><span>Original</span><span>Translation</span></div>
+        <div id="previewBody" class="preview-body"></div>
+      </section>
+    </main>
+
+    <p id="toast" class="toast" hidden></p>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

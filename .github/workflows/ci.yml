@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least privilege: this workflow only reads the repo to test it. Without this
+# block the GITHUB_TOKEN inherits the repo default (often read/write), which a
+# compromised build dependency could abuse to push code or tamper with releases.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+  rust-audit:
+    name: Rust dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Audit Rust dependencies
+        # Fails CI on a real advisory. Unmaintained/unsound warnings on transitive
+        # deps (mostly the Linux-only GTK stack, not in the Windows build) are
+        # reported but do not fail the build — cargo audit exits 0 on warnings.
+        run: cargo audit
+        working-directory: src-tauri

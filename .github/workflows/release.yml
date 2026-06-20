@@ -58,51 +58,57 @@ jobs:
       - name: Build (tauri)
         run: npm run tauri build -- ${{ matrix.args }}
 
-      # Collect the portable artifact(s) for this OS into a flat dist/ folder.
+      # Collect the portable artifact(s) for this OS into a dedicated artifacts/
+      # folder. NB: do NOT reuse dist/ — that's where Vite builds the web UI
+      # (index.html + assets/), and sweeping those into the release upload makes
+      # `gh release create` choke on the assets/ directory.
       # VERSION strips the leading "v" from the tag for friendly filenames; on a
-      # manual (workflow_dispatch) run it falls back to the tauri.conf.json value.
+      # manual (workflow_dispatch) run it falls back to the package.json value.
       - name: Stage artifacts
         env:
           REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          mkdir -p dist
+          mkdir -p artifacts
           case "$REF_NAME" in v*) VERSION="${REF_NAME#v}";; *) VERSION="$(node -p "require('./package.json').version")";; esac
           case "${{ matrix.platform }}" in
             macos-latest)
               ditto -c -k --keepParent \
                 "src-tauri/target/universal-apple-darwin/release/bundle/macos/SubLLMinal.app" \
-                "dist/SubLLMinal_${VERSION}_universal.zip"
+                "artifacts/SubLLMinal_${VERSION}_universal.zip"
               ;;
             ubuntu-22.04)
-              cp src-tauri/target/release/bundle/appimage/*.AppImage dist/
+              cp src-tauri/target/release/bundle/appimage/*.AppImage artifacts/
               ;;
             windows-latest)
               # Portable, no-install single exe (the release binary is self-contained).
-              cp "src-tauri/target/release/app.exe" "dist/SubLLMinal_${VERSION}_x64-portable.exe"
+              cp "src-tauri/target/release/app.exe" "artifacts/SubLLMinal_${VERSION}_x64-portable.exe"
               # Also ship the NSIS installer for users who prefer it.
-              cp src-tauri/target/release/bundle/nsis/*-setup.exe dist/ || true
+              cp src-tauri/target/release/bundle/nsis/*-setup.exe artifacts/ || true
               ;;
           esac
-          ls -la dist
+          ls -la artifacts
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: dist-${{ matrix.platform }}
-          path: dist/*
+          name: artifacts-${{ matrix.platform }}
+          path: artifacts/*
           if-no-files-found: error
 
   release:
     name: Publish draft release
     needs: build
     runs-on: ubuntu-latest
+    # Only publish for an actual version tag — a manual workflow_dispatch run is
+    # build-only (its ref is a branch, which has no release to attach to).
+    if: startsWith(github.ref, 'refs/tags/v')
     # The only place that can write to the repo — scoped to releases (contents).
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          path: dist
+          path: artifacts
           merge-multiple: true
 
       - name: Create / update draft release
@@ -112,16 +118,16 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          ls -la dist
+          ls -la artifacts
           NOTES="Portable, no-installer builds. See the README for how to run on each platform.
 
           - **Windows**: \`SubLLMinal_*_x64-portable.exe\` (or the \`*-setup.exe\` installer)
-          - **macOS**: \`SubLLMinal_*_universal.zip\` (Intel + Apple Silicon; unsigned — first launch: right-click ▸ Open)
+          - **macOS**: \`SubLLMinal_*_universal.zip\` (Intel + Apple Silicon; unsigned — clear Gatekeeper via System Settings ▸ Privacy & Security, or \`xattr -dr com.apple.quarantine\`)
           - **Linux**: \`*.AppImage\` (\`chmod +x\` then run)"
           if gh release view "$REF_NAME" --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload "$REF_NAME" dist/* --repo "$REPO" --clobber
+            gh release upload "$REF_NAME" artifacts/* --repo "$REPO" --clobber
           else
-            gh release create "$REF_NAME" dist/* \
+            gh release create "$REF_NAME" artifacts/* \
               --repo "$REPO" \
               --draft \
               --title "SubLLMinal $REF_NAME" \

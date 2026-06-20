@@ -58,12 +58,17 @@ Download **`SubLLMinal_<version>_universal.zip`** — one build that runs on bot
 and Apple Silicon. Double-click to unzip, then move **`SubLLMinal.app`** wherever you
 like. It uses the system WebKit, so there's nothing else to install.
 
-The app isn't code-signed, so on first launch macOS Gatekeeper blocks it. Clear it
-**once**, either way:
-- **Right-click** (or Control-click) `SubLLMinal.app` ▸ **Open** ▸ **Open**, or
-- run `xattr -dr com.apple.quarantine /path/to/SubLLMinal.app` in Terminal.
+The app isn't code-signed, so on first launch macOS Gatekeeper blocks it ("can't be
+opened" / "unidentified developer"). Clear it **once**, then it opens normally by
+double-click. Use whichever applies to your macOS:
 
-After that it opens normally by double-click.
+- **macOS 15 Sequoia and newer:** double-click the app (it gets blocked), then open
+  **System Settings ▸ Privacy & Security**, scroll to the message about `SubLLMinal`,
+  and click **Open Anyway**.
+- **macOS 14 and earlier:** **right-click** (or Control-click) `SubLLMinal.app` ▸
+  **Open** ▸ **Open**.
+- **Any version (Terminal):** `xattr -dr com.apple.quarantine /path/to/SubLLMinal.app`
+  — removes the download quarantine so it launches directly.
 
 ### Linux
 Download **`SubLLMinal_<version>_amd64.AppImage`**, make it executable, and run it:

@@ -9,6 +9,7 @@
     "core:default",
     "dialog:default",
     "store:default",
+    "opener:allow-reveal-item-in-dir",
     {
       "identifier": "http:default",
       "allow": [

@@ -3,10 +3,11 @@
 [![CI](https://github.com/LockhartKZ/SubLLMinal/actions/workflows/ci.yml/badge.svg)](https://github.com/LockhartKZ/SubLLMinal/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A small Windows desktop app that translates `.srt` and `.ass` subtitle files with an
-LLM — **local-first** (LM Studio, llama.cpp, Ollama) with optional cloud endpoints.
-It sends the dialogue a few lines at a time with prior lines as context, keeps all
-timing and styling intact, and supports right-to-left languages (Arabic, Persian, …).
+A small cross-platform desktop app (**Windows, macOS, Linux**) that translates `.srt`
+and `.ass` subtitle files with an LLM — **local-first** (LM Studio, llama.cpp, Ollama)
+with optional cloud endpoints. It sends the dialogue a few lines at a time with prior
+lines as context, keeps all timing and styling intact, and supports right-to-left
+languages (Arabic, Persian, …).
 
 ## Screenshots
 
@@ -41,16 +42,37 @@ timing and styling intact, and supports right-to-left languages (Arabic, Persian
 
 ## Get the app
 
-Two ways to run it, both produced by `npm run tauri build`:
+Grab the build for your OS from the
+[**latest release**](https://github.com/LockhartKZ/SubLLMinal/releases/latest). Every
+build is **portable — no installer required**. To translate you'll also need an LLM
+endpoint (local or cloud); see [For users](#for-users).
 
-- **Installer** — `SubLLMinal_<version>_x64-setup.exe` (~3.5 MB). Double-click
-  to install; adds a Start-menu shortcut.
-- **Portable** — a single `SubLLMinal.exe` (~15 MB) that runs with **no
-  installation**: copy it anywhere and double-click. Create it with
-  `scripts/make-portable.ps1` after a build (output in `portable/`).
+### Windows
+Download **`SubLLMinal_<version>_x64-portable.exe`** and double-click it — nothing to
+install, copy it anywhere. (An installer, `SubLLMinal_<version>_x64-setup.exe`, is also
+provided if you'd rather have a Start-menu shortcut.) Needs the Microsoft Edge
+**WebView2** runtime, which ships with Windows 11 and recent Windows 10.
 
-Both only need the Microsoft Edge **WebView2** runtime, which ships with Windows 11 and
-recent Windows 10.
+### macOS
+Download **`SubLLMinal_<version>_universal.zip`** — one build that runs on both Intel
+and Apple Silicon. Double-click to unzip, then move **`SubLLMinal.app`** wherever you
+like. It uses the system WebKit, so there's nothing else to install.
+
+The app isn't code-signed, so on first launch macOS Gatekeeper blocks it. Clear it
+**once**, either way:
+- **Right-click** (or Control-click) `SubLLMinal.app` ▸ **Open** ▸ **Open**, or
+- run `xattr -dr com.apple.quarantine /path/to/SubLLMinal.app` in Terminal.
+
+After that it opens normally by double-click.
+
+### Linux
+Download **`SubLLMinal_<version>_amd64.AppImage`**, make it executable, and run it:
+```bash
+chmod +x SubLLMinal_*_amd64.AppImage
+./SubLLMinal_*_amd64.AppImage
+```
+The AppImage bundles its own WebKitGTK. On newer distros (e.g. Ubuntu 24.04) you may
+need FUSE 2 once: `sudo apt install libfuse2t64` (older distros: `libfuse2`).
 
 ## For users
 
@@ -81,7 +103,7 @@ recent Windows 10.
 - **Find & replace** across all translated lines.
 - **Recent files** dropdown to reopen quickly.
 - **Keyboard shortcuts:** `Ctrl+O` open · `Ctrl+Enter` translate · `Esc` cancel · `Ctrl+S` save.
-- **Open folder** after saving reveals the file in Explorer.
+- **Open folder** after saving reveals the file in your file manager (Explorer/Finder/…).
 - The dot next to **Model & connection** turns green when your endpoint is reachable (auto-checked on launch).
 - Input subtitles in any common encoding are auto-detected; output is UTF-8.
 
@@ -90,9 +112,14 @@ recent Windows 10.
 ### Prerequisites
 - [Node.js](https://nodejs.org/) 18+
 - [Rust](https://www.rust-lang.org/tools/install) (rustup) — to build the native shell
-- **MSVC C++ Build Tools** (Windows): the “Desktop development with C++” workload from
-  the Visual Studio Build Tools. Rust uses its linker.
-- WebView2 runtime — preinstalled on Windows 11.
+- Platform toolchain for the native shell:
+  - **Windows** — **MSVC C++ Build Tools** (the “Desktop development with C++” workload
+    from the Visual Studio Build Tools; Rust uses its linker) + the WebView2 runtime
+    (preinstalled on Windows 11).
+  - **macOS** — Xcode Command Line Tools (`xcode-select --install`). Uses the built-in
+    WebKit; no runtime to install.
+  - **Linux** — `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf`
+    (build on Ubuntu 22.04 / Debian 12 or newer for WebKitGTK 4.1).
 
 ### Commands
 ```bash
@@ -101,17 +128,33 @@ npx vitest            # unit tests (parsers, engine, client) — no Rust needed
 npm run typecheck     # tsc --noEmit
 npm run dev           # frontend only, in a browser (Tauri features inert)
 npm run tauri dev     # the real desktop app
-npm run tauri build   # installer under src-tauri/target/release/bundle/nsis/
-pwsh scripts/make-portable.ps1   # portable single-exe under portable/ (after a build)
+npm run tauri build   # native bundle under src-tauri/target/release/bundle/
 npx vite-node scripts/live-translate.ts   # end-to-end check vs a running local LLM
 ```
 
+Portable, no-installer builds per OS (the bundler emits these directly):
+```bash
+# Windows — the self-contained release exe is the portable build:
+npm run tauri build                              # then scripts/make-portable.ps1 → portable/
+# macOS — one universal .app for Intel + Apple Silicon (zip it for distribution):
+npm run tauri build -- --target universal-apple-darwin --bundles app
+# Linux — a single self-contained AppImage:
+npm run tauri build -- --bundles appimage
+```
+
+### Releasing
+Pushing a `v*` tag (e.g. `git tag v0.2.0 && git push origin v0.2.0`) runs
+[`.github/workflows/release.yml`](.github/workflows/release.yml): it builds all three
+OSes and attaches the portable artifacts to a **draft** GitHub Release for review
+before you publish. Mac/Linux can't be built from Windows, so CI is the path for them.
+
 ### First-time native shell
 The `src-tauri/` folder is generated once with `npm run tauri init` (after Rust is
-installed), then the HTTP/dialog/store plugins are registered and their permissions
-added under `src-tauri/capabilities/`. File read/write is a pair of custom Rust
-commands (`read_text_file`/`write_text_file`) rather than the fs plugin, and
-`read_text_file` auto-detects the input encoding.
+installed), then the HTTP/dialog/store/opener plugins are registered and their
+permissions added under `src-tauri/capabilities/`. File read/write is a pair of custom
+Rust commands (`read_text_file`/`write_text_file`) rather than the fs plugin, and
+`read_text_file` auto-detects the input encoding. The opener plugin is granted only
+`reveal-item-in-dir` (the “Open folder” button), nothing broader.
 
 ## Project layout
 ```

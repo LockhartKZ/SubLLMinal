@@ -1,4 +1,5 @@
 import { open, save } from "@tauri-apps/plugin-dialog";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { invoke } from "@tauri-apps/api/core";
 import { formatFromName, type SubtitleFormat } from "../subtitle/types";
 
@@ -66,7 +67,7 @@ export async function saveSubtitle(
   return path;
 }
 
-/** Open Windows Explorer with the saved file selected. */
+/** Reveal the saved file in the OS file manager (Explorer/Finder/…). */
 export function revealInFolder(path: string): Promise<void> {
-  return invoke("reveal_in_explorer", { path }).then(() => undefined);
+  return revealItemInDir(path);
 }

@@ -74,3 +74,40 @@ describe("CI token permissions", () => {
     expect(ciYml).not.toMatch(/:\s*write\b/);
   });
 });
+
+/**
+ * The release workflow is the one place that needs write access (to publish the
+ * GitHub Release). Keep its blast radius small: it must trigger only on version
+ * tags (never `pull_request`, so a fork can't obtain the write-scoped token),
+ * default to a read-only token with `contents: write` granted only on the
+ * publishing job, and pin every external action to a full commit SHA so a moved
+ * or compromised tag can't inject a malicious action into a privileged run.
+ */
+const releaseYml = readFileSync(
+  new URL("../.github/workflows/release.yml", import.meta.url),
+  "utf8",
+);
+
+describe("release workflow hardening", () => {
+  it("triggers on version tags, not pull_request", () => {
+    expect(releaseYml).toMatch(/tags:\s*\[?\s*["']?v\*/);
+    expect(releaseYml).not.toMatch(/^\s*pull_request:/m);
+  });
+
+  it("defaults to a read-only token and grants only contents: write", () => {
+    // Top-level (default) permissions are read-only.
+    expect(releaseYml).toMatch(/^permissions:\s*\n\s*contents:\s*read/m);
+    // The only elevation anywhere is contents: write — never blanket write-all.
+    expect(releaseYml).toMatch(/contents:\s*write/);
+    expect(releaseYml).not.toMatch(/write-all/);
+  });
+
+  it("pins every external action to a full commit SHA", () => {
+    const refs = [...releaseYml.matchAll(/uses:\s*(\S+)/g)].map((m) => m[1]);
+    expect(refs.length).toBeGreaterThan(0);
+    for (const ref of refs) {
+      // owner/repo[/path]@<40-hex-sha> — a branch/tag ref would not match.
+      expect(ref).toMatch(/@[0-9a-f]{40}$/);
+    }
+  });
+});

@@ -1,0 +1,129 @@
+name: Release
+
+# Builds the portable, no-installer artifacts for all three desktop OSes and
+# attaches them to a DRAFT GitHub Release. Triggered only by pushing a version
+# tag (e.g. `v0.2.0`) — never by pull_request, so forks can never obtain the
+# write-scoped token used by the `release` job below.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Least privilege by default: the build matrix only needs to read the repo. The
+# single `release` job opts into `contents: write` to publish the draft. CI
+# (ci.yml) stays read-only; the write scope lives only here, only on tags.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # One universal macOS .app runs on both Intel and Apple Silicon.
+          - platform: macos-latest
+            args: --target universal-apple-darwin --bundles app
+          - platform: ubuntu-22.04 # oldest base with WebKitGTK 4.1 → widest Linux support
+            args: --bundles appimage
+          - platform: windows-latest
+            args: --bundles nsis
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Add macOS universal Rust targets
+        if: matrix.platform == 'macos-latest'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build (tauri)
+        run: npm run tauri build -- ${{ matrix.args }}
+
+      # Collect the portable artifact(s) for this OS into a flat dist/ folder.
+      # VERSION strips the leading "v" from the tag for friendly filenames; on a
+      # manual (workflow_dispatch) run it falls back to the tauri.conf.json value.
+      - name: Stage artifacts
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          case "$REF_NAME" in v*) VERSION="${REF_NAME#v}";; *) VERSION="$(node -p "require('./package.json').version")";; esac
+          case "${{ matrix.platform }}" in
+            macos-latest)
+              ditto -c -k --keepParent \
+                "src-tauri/target/universal-apple-darwin/release/bundle/macos/SubLLMinal.app" \
+                "dist/SubLLMinal_${VERSION}_universal.zip"
+              ;;
+            ubuntu-22.04)
+              cp src-tauri/target/release/bundle/appimage/*.AppImage dist/
+              ;;
+            windows-latest)
+              # Portable, no-install single exe (the release binary is self-contained).
+              cp "src-tauri/target/release/app.exe" "dist/SubLLMinal_${VERSION}_x64-portable.exe"
+              # Also ship the NSIS installer for users who prefer it.
+              cp src-tauri/target/release/bundle/nsis/*-setup.exe dist/ || true
+              ;;
+          esac
+          ls -la dist
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish draft release
+    needs: build
+    runs-on: ubuntu-latest
+    # The only place that can write to the repo — scoped to releases (contents).
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create / update draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ls -la dist
+          NOTES="Portable, no-installer builds. See the README for how to run on each platform.
+
+          - **Windows**: \`SubLLMinal_*_x64-portable.exe\` (or the \`*-setup.exe\` installer)
+          - **macOS**: \`SubLLMinal_*_universal.zip\` (Intel + Apple Silicon; unsigned — first launch: right-click ▸ Open)
+          - **Linux**: \`*.AppImage\` (\`chmod +x\` then run)"
+          if gh release view "$REF_NAME" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$REF_NAME" dist/* --repo "$REPO" --clobber
+          else
+            gh release create "$REF_NAME" dist/* \
+              --repo "$REPO" \
+              --draft \
+              --title "SubLLMinal $REF_NAME" \
+              --notes "$NOTES"
+          fi

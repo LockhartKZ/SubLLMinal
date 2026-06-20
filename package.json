@@ -1,7 +1,7 @@
 {
   "name": "subllminal",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Desktop app that translates .srt/.ass subtitles via a local-first (OpenAI-compatible) LLM, preserving timing, styling, and RTL languages.",
   "scripts": {
@@ -17,6 +17,7 @@
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-http": "^2.5.9",
+    "@tauri-apps/plugin-opener": "^2.5.0",
     "@tauri-apps/plugin-store": "^2.4.3"
   },
   "devDependencies": {
